@@ -436,25 +436,30 @@
   let cv = null; // the OpenCV module, once loaded
   let cvFailed = false;
 
+  /**
+   * Load OpenCV.js once. Resolves to true when it is usable.
+   * Never resolve a Promise with the `cv` module itself: it has an Emscripten `then()` that calls back
+   * synchronously with the module again, so the Promise keeps adopting it forever and freezes the page.
+   */
   function ensureOpenCV() {
     if (cv || cvFailed || !window.DocDetect) {
       if (!window.DocDetect) cvFailed = true;
       updateDetectUi();
-      return Promise.resolve(cv);
+      return Promise.resolve(Boolean(cv));
     }
     setDetectStatus("Loading edge detection…");
     return window.DocDetect.load()
       .then(({ cv: mod }) => {
         cv = mod;
         updateDetectUi();
-        return cv;
+        return true;
       })
       .catch((err) => {
         console.warn("OpenCV.js unavailable:", err);
         cvFailed = true;
         updateDetectUi();
         toast("Edge detection could not be loaded – the page will be cropped to the frame instead.", true);
-        return null;
+        return false;
       });
   }
 
