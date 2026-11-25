@@ -1,0 +1,82 @@
+# DocScan production stack for a single server (e.g. Oracle Cloud Always Free VM).
+#   Caddy (HTTPS, ports 80/443) -> web (gunicorn) -> Postgres + Redis <- worker (Celery)
+# Only Caddy is reachable from the internet. Settings and secrets come from .env.prod.
+#   Start / update:  docker compose -f docker-compose.prod.yml up -d --build
+#   Logs:            docker compose -f docker-compose.prod.yml logs -f web worker
+
+x-app: &app
+  build: .
+  image: docscan-backend
+  env_file: .env.prod
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+    REDIS_URL: redis://redis:6379/0
+    MEDIA_ROOT: /data/media
+    SERVE_MEDIA: "True"
+    CELERY_TASK_ALWAYS_EAGER: "False"
+    # Caddy already redirects HTTP to HTTPS. Django's own redirect is off so the container's
+    # internal health check (http://localhost:8000/healthz/) gets a 200 instead of a 301.
+    SECURE_SSL_REDIRECT: "False"
+  volumes:
+    - app-data:/data
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *app
+    command: ["web"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    healthcheck:
+      disable: true
+    depends_on:
+      web:
+        condition: service_healthy   # web runs the migrations first
+
+  db:
+    image: postgres:17-alpine
+    env_file: .env.prod
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    env_file: .env.prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  pg-data:
+  caddy-data:
+  caddy-config:

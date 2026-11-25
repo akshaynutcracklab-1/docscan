@@ -1,0 +1,198 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>DocScan</title>
+  <link rel="stylesheet" href="{% static 'scanner/app.css' %}">
+  <script src="{% static 'scanner/docdetect.js' %}" defer></script>
+  <script src="{% static 'scanner/app.js' %}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-action="home" type="button">DocScan</button>
+    <div class="topbar-right">
+      <span id="whoami" class="muted"></span>
+      <button id="logout" class="link hidden" type="button">Log out</button>
+    </div>
+  </header>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <main>
+    <!-- ============ Login / register ============ -->
+    <section id="view-auth" class="view hidden">
+      <div class="card narrow">
+        <h1 id="auth-title">Log in</h1>
+        <form id="auth-form" autocomplete="on">
+          <label>Username <input name="username" required autocomplete="username"></label>
+          <label class="register-only hidden">Email <input name="email" type="email" autocomplete="email"></label>
+          <label>Password <input name="password" type="password" required autocomplete="current-password"></label>
+          <p id="auth-error" class="error hidden"></p>
+          <button class="primary wide" type="submit" id="auth-submit">Log in</button>
+        </form>
+        <p class="muted center">
+          <span id="auth-switch-text">No account?</span>
+          <button id="auth-switch" class="link" type="button">Create one</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ Home: choose type + history ============ -->
+    <section id="view-home" class="view hidden">
+      <h1>Scan a document</h1>
+      <p class="muted">Choose what you are scanning.</p>
+      <div id="type-grid" class="type-grid"></div>
+
+      <div class="section-head">
+        <h2>My documents</h2>
+        <form id="search-form" class="search" role="search">
+          <input id="search-input" type="search" placeholder="Search text…" aria-label="Search documents">
+        </form>
+      </div>
+      <div id="doc-list" class="doc-list"></div>
+      <button id="more-docs" class="secondary hidden" type="button">Load more</button>
+    </section>
+
+    <!-- ============ Scan: camera + page tray ============ -->
+    <section id="view-scan" class="view hidden">
+      <div class="scan-head">
+        <button class="link" data-action="home" type="button">← Back</button>
+        <strong id="scan-type-name"></strong>
+        <span id="page-counter" class="muted"></span>
+      </div>
+
+      <div id="camera-box" class="camera-box">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay" class="overlay"></canvas>
+        <div id="guide" class="guide off"></div>
+        <div id="detect-status" class="detect-status">Loading edge detection…</div>
+        <div id="flash" class="flash"></div>
+        <div id="camera-message" class="camera-message hidden"></div>
+      </div>
+
+      <div class="camera-controls">
+        <label class="toggle" title="Find the page edges and straighten the page"><input type="checkbox" id="opt-detect" checked> Detect edges</label>
+        <label class="toggle" title="Capture automatically when the page is held still"><input type="checkbox" id="opt-auto"> Auto capture</label>
+        <label class="toggle">Filter
+          <select id="opt-filter">
+            <option value="enhanced" selected>Enhanced</option>
+            <option value="color">Original colour</option>
+            <option value="bw">Black &amp; white</option>
+          </select>
+        </label>
+        <button id="switch-camera" class="secondary small hidden" type="button" title="Switch camera">⟲ Camera</button>
+      </div>
+
+      <div class="shutter-row">
+        <label class="secondary small file-btn" title="Add photos from the gallery">
+          Gallery
+          <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple hidden>
+        </label>
+        <button id="shutter" class="shutter" type="button" aria-label="Capture page"></button>
+        <button id="done-scanning" class="primary small" type="button" disabled>Done</button>
+      </div>
+
+      <div id="tray" class="tray" aria-label="Scanned pages"></div>
+    </section>
+
+    <!-- ============ Crop editor ============ -->
+    <section id="view-crop" class="view hidden">
+      <div class="scan-head">
+        <button class="link" id="crop-cancel" type="button">← Cancel</button>
+        <strong>Adjust the corners</strong>
+        <span></span>
+      </div>
+      <p class="muted">Drag the 4 corners onto the corners of the page.</p>
+      <div id="crop-stage" class="crop-stage">
+        <canvas id="crop-canvas"></canvas>
+      </div>
+      <div class="row wrap center">
+        <label class="toggle">Filter
+          <select id="crop-filter">
+            <option value="enhanced">Enhanced</option>
+            <option value="color">Original colour</option>
+            <option value="bw">Black &amp; white</option>
+          </select>
+        </label>
+        <button id="crop-detect" class="secondary" type="button">Detect again</button>
+        <button id="crop-full" class="secondary" type="button">Whole photo</button>
+        <button id="crop-apply" class="primary" type="button">Apply</button>
+      </div>
+    </section>
+
+    <!-- ============ Review & submit ============ -->
+    <section id="view-review" class="view hidden">
+      <div class="scan-head">
+        <button class="link" id="back-to-scan" type="button">← Add more pages</button>
+      </div>
+      <h1>Review</h1>
+      <label>Title <input id="doc-title" maxlength="255" placeholder="Optional – a default name is used"></label>
+      <div id="review-grid" class="review-grid"></div>
+      <button id="submit-doc" class="primary wide" type="button">Upload &amp; extract text</button>
+    </section>
+
+    <!-- ============ Processing ============ -->
+    <section id="view-progress" class="view hidden">
+      <div class="card narrow center">
+        <h1 id="progress-title">Processing…</h1>
+        <div class="progress"><div id="progress-bar" class="progress-bar"></div></div>
+        <p id="progress-step" class="muted"></p>
+        <p id="progress-error" class="error hidden"></p>
+        <div class="row center">
+          <button id="retry-doc" class="primary hidden" type="button">Retry</button>
+          <button id="progress-home" class="secondary hidden" data-action="home" type="button">Home</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Result ============ -->
+    <section id="view-result" class="view hidden">
+      <div class="scan-head">
+        <button class="link" data-action="home" type="button">← Home</button>
+        <span id="result-status" class="badge"></span>
+      </div>
+      <h1 id="result-title"></h1>
+      <p id="result-meta" class="muted"></p>
+      <div id="result-warning" class="warning hidden"></div>
+
+      <div class="row wrap">
+        <button id="dl-pdf" class="primary" type="button">Open PDF</button>
+        <button id="dl-txt" class="secondary" type="button">Download .txt</button>
+        <button id="dl-json" class="secondary" type="button">Download .json</button>
+        <button id="add-pages" class="secondary" type="button">Add pages</button>
+        <button id="delete-doc" class="danger" type="button">Delete</button>
+      </div>
+
+      <div id="fields-card" class="card hidden">
+        <h2>Extracted fields</h2>
+        <div id="fields"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>Text</h2>
+          <div class="row">
+            <button id="copy-text" class="secondary small" type="button">Copy</button>
+            <button id="save-text" class="primary small" type="button" disabled>Save changes</button>
+          </div>
+        </div>
+        <textarea id="result-text" rows="16" spellcheck="false"></textarea>
+      </div>
+
+      <div id="analysis-card" class="card hidden">
+        <h2>Found in the text</h2>
+        <div id="analysis"></div>
+      </div>
+
+      <div class="card">
+        <h2>Pages</h2>
+        <div id="result-pages" class="review-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="work-canvas" hidden></canvas>
+</body>
+</html>

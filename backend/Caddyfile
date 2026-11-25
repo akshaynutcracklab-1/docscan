@@ -1,0 +1,9 @@
+# Caddy gets and renews a free Let's Encrypt certificate for $DOMAIN (set in .env.prod)
+# and forwards requests to gunicorn. HTTP is redirected to HTTPS automatically.
+{$DOMAIN} {
+	encode gzip
+	request_body {
+		max_size 50MB
+	}
+	reverse_proxy web:8000
+}

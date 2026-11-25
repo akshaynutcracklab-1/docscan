@@ -1,0 +1,95 @@
+# DocScan: API + Celery worker + Redis.   Run:  docker compose up --build
+#   API / Swagger:  http://localhost:8000/api/docs/
+# The SQLite database and uploaded files live in the `app-data` volume shared by web and worker.
+# Settings come from ../.env (repository root, e.g. your DOCINTEL_* keys) and ./.env; ./.env wins.
+
+x-app: &app
+  build: .
+  image: docscan-backend
+  env_file:
+    - path: ../.env
+      required: false
+    - path: .env
+      required: false
+  environment:
+    # Container-specific values; these override the .env files.
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+    SECRET_KEY: ${SECRET_KEY:-insecure-docker-key-change-me}
+    # .trycloudflare.com lets the optional `tunnel` service below expose the API for demos.
+    ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,.trycloudflare.com}
+    CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://*.trycloudflare.com}
+    DATABASE_URL: sqlite:////data/db.sqlite3
+    MEDIA_ROOT: /data/media
+    REDIS_URL: redis://redis:6379/0
+    CELERY_TASK_ALWAYS_EAGER: "False"
+    # Plain HTTP on localhost: no HTTPS redirect, no secure-only cookies, no HSTS.
+    # Remove these three behind a TLS-terminating proxy.
+    SECURE_SSL_REDIRECT: "False"
+    SECURE_COOKIES: "False"
+    SECURE_HSTS_SECONDS: "0"
+    SERVE_MEDIA: "True"
+  volumes:
+    - app-data:/data
+  restart: unless-stopped
+
+services:
+  web:
+    <<: *app
+    command: ["web"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    healthcheck:
+      disable: true
+    depends_on:
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy   # web runs the migrations first
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      # Published on localhost only, so `runserver` / a local Celery worker can use it:
+      #   docker compose up -d redis
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional public HTTPS URL for testing/demos (Cloudflare quick tunnel, no account needed):
+  #   docker compose --profile tunnel up -d --build
+  #   docker compose logs tunnel        -> look for https://<random>.trycloudflare.com
+  # The URL changes every time the tunnel restarts. Stop it with: docker compose stop tunnel
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate --url http://web:8000
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional Azure Blob emulator for testing USE_AZURE_STORAGE=True locally:
+  #   docker compose --profile azurite up -d azurite
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    profiles: ["azurite"]
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --loose --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+
+volumes:
+  app-data:
+  azurite-data:

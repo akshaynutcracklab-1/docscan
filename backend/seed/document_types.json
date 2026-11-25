@@ -1,0 +1,92 @@
+[
+  {
+    "model": "documents.documenttype",
+    "pk": 1,
+    "fields": {
+      "code": "general",
+      "name": "General",
+      "description": "Any document. Text is recognised and a searchable PDF is created.",
+      "icon": "file-text",
+      "is_active": true,
+      "sort_order": 1,
+      "azure_field_model": null,
+      "display_fields": [],
+      "max_pages": 50
+    }
+  },
+  {
+    "model": "documents.documenttype",
+    "pk": 2,
+    "fields": {
+      "code": "invoice",
+      "name": "Invoice",
+      "description": "Vendor invoices: vendor, invoice number, dates, totals and line items.",
+      "icon": "file-invoice",
+      "is_active": true,
+      "sort_order": 2,
+      "azure_field_model": "prebuilt-invoice",
+      "display_fields": ["VendorName", "InvoiceId", "InvoiceDate", "DueDate", "SubTotal", "TotalTax", "InvoiceTotal", "Items"],
+      "max_pages": 50
+    }
+  },
+  {
+    "model": "documents.documenttype",
+    "pk": 3,
+    "fields": {
+      "code": "receipt",
+      "name": "Receipt",
+      "description": "Shop and restaurant receipts: merchant, date, totals and items.",
+      "icon": "receipt",
+      "is_active": true,
+      "sort_order": 3,
+      "azure_field_model": "prebuilt-receipt",
+      "display_fields": ["MerchantName", "MerchantAddress", "MerchantPhoneNumber", "TransactionDate", "TransactionTime", "Subtotal", "TotalTax", "Tip", "Total", "Items"],
+      "max_pages": 50
+    }
+  },
+  {
+    "model": "documents.documenttype",
+    "pk": 4,
+    "fields": {
+      "code": "id_document",
+      "name": "ID Document",
+      "description": "Passports, driving licences and national ID cards (front and back).",
+      "icon": "id-card",
+      "is_active": true,
+      "sort_order": 4,
+      "azure_field_model": "prebuilt-idDocument",
+      "display_fields": ["FirstName", "LastName", "DocumentNumber", "DateOfBirth", "DateOfExpiration", "Sex", "Address", "CountryRegion", "Region"],
+      "max_pages": 2
+    }
+  },
+  {
+    "model": "documents.documenttype",
+    "pk": 5,
+    "fields": {
+      "code": "form_table",
+      "name": "Form / Table",
+      "description": "Forms and documents with tables. Tables and a Markdown version are extracted.",
+      "icon": "table",
+      "is_active": true,
+      "sort_order": 5,
+      "azure_field_model": "prebuilt-layout",
+      "display_fields": ["tables", "markdown"],
+      "max_pages": 50
+    }
+  },
+  {
+    "model": "documents.documenttype",
+    "pk": 6,
+    "fields": {
+      "code": "contract",
+      "name": "Contract",
+      "description": "Agreements: title, parties, execution, effective and expiration dates.",
+      "icon": "file-signature",
+      "is_active": true,
+      "sort_order": 6,
+      "azure_field_model": "prebuilt-contract",
+      "display_fields": ["Title", "ContractId", "Parties", "ExecutionDate", "EffectiveDate", "ExpirationDate", "ContractDuration", "RenewalDate", "Jurisdictions"],
+      "max_pages": 50
+    }
+  }
+]

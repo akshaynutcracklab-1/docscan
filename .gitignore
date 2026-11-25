@@ -1,0 +1,17 @@
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Local scratch
+Claude outputs/
+Screenshot.png
+test_ocr.py
+*.tgz
