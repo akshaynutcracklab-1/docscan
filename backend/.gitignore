@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env.prod
+
+# Android build served at /download/ (copied in before docker build)
+downloads/*.apk

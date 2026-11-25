@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#047857">
+  <title>Download DocScan for Android</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #ecfdf5; color: #064e3b; padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 440px; background: #fff; border-radius: 20px; padding: 32px 28px;
+      box-shadow: 0 10px 30px rgba(6, 78, 59, .12); text-align: center;
+    }
+    .logo {
+      width: 72px; height: 72px; border-radius: 18px; background: #047857; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700;
+    }
+    h1 { font-size: 26px; margin: 16px 0 4px; }
+    .sub { color: #047857; margin: 0 0 24px; }
+    .btn {
+      display: block; width: 100%; padding: 16px; border-radius: 14px; background: #047857; color: #fff;
+      font-size: 18px; font-weight: 600; text-decoration: none;
+    }
+    .btn:active { background: #065f46; }
+    .meta { font-size: 13px; color: #6b7280; margin: 10px 0 0; }
+    .off { background: #9ca3af; pointer-events: none; }
+    ol { text-align: left; font-size: 15px; line-height: 1.5; padding-left: 20px; margin: 24px 0 0; color: #374151; }
+    li + li { margin-top: 6px; }
+    .foot { margin-top: 22px; font-size: 13px; color: #6b7280; }
+    .foot a { color: #047857; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo" aria-hidden="true">D</div>
+    <h1>DocScan</h1>
+    <p class="sub">Scan documents and extract text on Android</p>
+
+    {% if apk_available %}
+      <a class="btn" href="{% url 'download-apk' %}" download>Download for Android</a>
+      <p class="meta">Version 1.0.0 · {{ apk_size_mb }} MB · Android 7.0+ (64-bit)</p>
+    {% else %}
+      <span class="btn off">Not available yet</span>
+      <p class="meta">The Android app hasn't been uploaded to this server.</p>
+    {% endif %}
+
+    <ol>
+      <li>Tap <b>Download for Android</b>, then open <b>DocScan.apk</b> from your notifications or Downloads.</li>
+      <li>If Android blocks it, tap <b>Settings</b> and allow <b>Install unknown apps</b> for your browser, then go back.</li>
+      <li>Tap <b>Install</b>. If Play Protect warns you, choose <b>Install anyway</b>.</li>
+      <li>Open DocScan, then create an account or log in.</li>
+    </ol>
+
+    <p class="foot">The server sleeps when idle, so the first sign-in can take up to a minute. · <a href="{% url 'scanner:index' %}">Use the web scanner</a></p>
+  </main>
+</body>
+</html>
